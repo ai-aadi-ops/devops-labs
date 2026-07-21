@@ -1,14 +1,35 @@
-from flask import Flask, render_template, request, redirect
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    session,
+    flash,
+    url_for
+)
+
 import mysql.connector
+import bcrypt
 import time
 
 app = Flask(__name__)
-
+app.secret_key = "change-this-to-a-random-secret-key"
 
 # -----------------------------
 # Database Connection
 # -----------------------------
 def connect_db():
+    def hash_password(password):
+    return bcrypt.hashpw(
+        password.encode("utf-8"),
+        bcrypt.gensalt()
+    ).decode("utf-8")
+    def verify_password(password, hashed_password):
+        return bcrypt.checkpw(
+            password.encode("utf-8"),
+            hashed_password.encode("utf-8")
+    )
+
     while True:
         try:
             connection = mysql.connector.connect(
@@ -35,14 +56,22 @@ def create_table():
     cursor = conn.cursor()
 
     # Employee table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS employees(
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            name VARCHAR(100),
-            email VARCHAR(100),
-            salary INT
-        )
-    """)
+    cursor.execute(
+    "SELECT * FROM users WHERE username=%s",
+    ("admin",)
+)
+
+if cursor.fetchone() is None:
+
+    admin_password = hash_password("admin123")
+
+    cursor.execute(
+        """
+        INSERT INTO users(username,password)
+        VALUES(%s,%s)
+        """,
+        ("admin", admin_password)
+    )
 
     # Users table
     cursor.execute("""
